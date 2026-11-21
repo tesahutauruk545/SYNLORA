@@ -1,0 +1,101 @@
+@php
+    $initial = mb_strtoupper(mb_substr(Auth::user()->name, 0, 1));
+    $navItems = [];
+    if (Auth::user()->isDosen()) {
+        $navItems[] = ['Monitoring', route('dosen.monitor'), request()->routeIs('dosen.*')];
+    }
+    $navItems[] = ['Dashboard', route('dashboard'), request()->routeIs('dashboard')];
+    $navItems[] = ['Room', route('rooms.join'), request()->routeIs('rooms.*')];
+    $navItems[] = ['Pomodoro', route('pomodoro.index'), request()->routeIs('pomodoro.*')];
+    $navItems[] = ['Riwayat', route('sessions.index'), request()->routeIs('sessions.*')];
+@endphp
+<nav x-data="{ open: false }" class="app-nav" @keydown.escape.window="open = false">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-[4.25rem]">
+            <div class="flex items-center">
+                <a href="{{ url('/') }}" class="app-brand shrink-0" aria-label="SYNLORA, beranda">
+                    <img src="{{ asset('images/logo-mark.png') }}" alt=""><span>Synlora</span>
+                </a>
+
+                <div class="hidden lg:ms-12 lg:flex lg:items-center lg:gap-8">
+                    @foreach ($navItems as [$label, $href, $active])
+                        <x-nav-link :href="$href" :active="$active">{{ __($label) }}</x-nav-link>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="hidden lg:flex lg:items-center lg:ms-6">
+                <x-dropdown align="right" width="48">
+                    <x-slot name="trigger">
+                        <button class="app-user" aria-haspopup="true">
+                            <span class="app-avatar" aria-hidden="true">{{ $initial }}</span>
+                            <span class="max-w-[10rem] truncate">{{ Auth::user()->name }}</span>
+                            <svg class="h-4 w-4 opacity-70" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </x-slot>
+
+                    <x-slot name="content">
+                        <x-dropdown-link :href="route('profile.edit')">
+                            {{ __('Profil') }}
+                        </x-dropdown-link>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <x-dropdown-link :href="route('logout')"
+                                    onclick="event.preventDefault();
+                                                this.closest('form').submit();">
+                                {{ __('Keluar') }}
+                            </x-dropdown-link>
+                        </form>
+                    </x-slot>
+                </x-dropdown>
+            </div>
+
+            <div class="-me-2 flex items-center lg:hidden">
+                <button @click="open = ! open" class="grid h-11 w-11 place-items-center rounded-full border border-[var(--line)] bg-white/10 transition hover:bg-white/20 focus:outline-none" :aria-expanded="open" aria-label="Menu navigasi">
+                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="open" x-cloak class="lg:hidden border-t border-[var(--line)] bg-[rgba(11,10,28,.96)] backdrop-blur-xl"
+         x-transition:enter="transition duration-500 ease-synlora"
+         x-transition:enter-start="opacity-0 -translate-y-3"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition duration-200 ease-in"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 -translate-y-2">
+        <div class="max-w-7xl mx-auto px-4 pt-2 pb-3">
+            @foreach ($navItems as [$label, $href, $active])
+                <x-responsive-nav-link :href="$href" :active="$active">{{ __($label) }}</x-responsive-nav-link>
+            @endforeach
+        </div>
+        <div class="max-w-7xl mx-auto px-4 pt-4 pb-5 border-t border-[var(--line)]">
+            <div class="flex items-center gap-3">
+                <span class="app-avatar" style="width:2.6rem;height:2.6rem;font-size:1rem" aria-hidden="true">{{ $initial }}</span>
+                <div class="min-w-0">
+                    <div class="truncate text-base font-semibold text-synlora-800">{{ Auth::user()->name }}</div>
+                    <div class="truncate text-sm text-synlora-500">{{ Auth::user()->email }}</div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <x-responsive-nav-link :href="route('profile.edit')">
+                    {{ __('Profil') }}
+                </x-responsive-nav-link>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <x-responsive-nav-link :href="route('logout')"
+                            onclick="event.preventDefault();
+                                        this.closest('form').submit();">
+                        {{ __('Keluar') }}
+                    </x-responsive-nav-link>
+                </form>
+            </div>
+        </div>
+    </div>
+</nav>
