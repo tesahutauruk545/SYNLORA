@@ -38,3 +38,9 @@ const monitorConfig = document.getElementById('monitor-config');
 if (monitorConfig) {
     import('./synlora/lecturer-monitor.js').then((m) => m.init(JSON.parse(monitorConfig.textContent)));
 }
+
+// Study Meet (LiveKit) di halaman room. Dimuat hanya di halaman yang memiliki kartu meeting.
+const meetingConfig = document.getElementById('meeting-config');
+if (meetingConfig) {
+    import('./synlora/live-meeting.js').then((m) => m.init(JSON.parse(meetingConfig.textContent)));
+}

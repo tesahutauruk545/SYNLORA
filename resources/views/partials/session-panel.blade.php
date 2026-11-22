@@ -19,6 +19,11 @@
         'feedUrl' => $mode === 'room' ? route('rooms.getActivities', $room) : null,
         'defaultSeconds' => $defaultFocusMinutes * 60,
         'initial' => $activeSession ? \App\Http\Controllers\SessionController::payloadFor($activeSession) : null,
+        // Realtime (Laravel Echo -> Reverb): hanya diisi bila BROADCAST_DRIVER=reverb. Tanpa itu, aplikasi tetap memakai polling.
+        'realtime' => $mode === 'room' ? \App\Support\Realtime::config() : null,
+        'userId' => auth()->id(),
+        'roomCode' => $mode === 'room' ? $room->code : null,
+        'canMonitor' => $mode === 'room' && auth()->user()->can('monitor', $room),
         'mediapipe' => [
             'wasmPath' => asset('vendor/mediapipe/wasm'),
             'modelPaths' => $faceModelPaths,

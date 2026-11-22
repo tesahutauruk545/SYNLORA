@@ -110,6 +110,8 @@
                 </div>
             </div>
 
+            @include('partials.live-meeting', ['room' => $room])
+
             @include('partials.session-panel', [
                 'mode' => 'room',
                 'room' => $room,

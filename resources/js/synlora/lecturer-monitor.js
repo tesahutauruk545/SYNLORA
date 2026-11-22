@@ -35,6 +35,9 @@ const mm = (sec) => {
     return m >= 60 ? `${Math.floor(m / 60)}j ${m % 60}m` : `${m} mnt`;
 };
 
+import { notify } from './notify.js';
+import { getEcho, describe } from './realtime.js';
+
 export function init(cfg) {
     const $ = (id) => document.getElementById(id);
     const list = $('student-list');
@@ -292,6 +295,33 @@ export function init(cfg) {
         blocks.push(ac);
 
         return blocks;
+    }
+
+    // ---------------------------------------------------------- realtime (Reverb)
+    // Status berubah seketika di baris mahasiswa, lalu disamakan dengan data server (debounce) agar ringkasan akurat.
+    // Tanpa Reverb: polling di atas tetap menjadi satu-satunya sumber (tidak ada yang rusak).
+    if (cfg.realtime && cfg.roomCodes && cfg.roomCodes.length) {
+        let reconcile = null;
+        getEcho(cfg.realtime, document.querySelector('meta[name="csrf-token"]')?.content).then((echo) => {
+            if (!echo) return;
+            cfg.roomCodes.forEach((code) => {
+                echo.private(`room.${code}.monitor`).listen('.focus.status', (ev) => {
+                    const s = state.data && state.data.students.find((x) => String(x.id) === String(ev.student_id));
+                    if (s) {
+                        s.status = ev.status;
+                        s.source = ev.source;
+                        s.reason = ev.reason;
+                        render();
+                    }
+                    if (ev.notify) {
+                        const [title, msg] = describe(ev, false);
+                        notify(ev.kind === 'recovered' ? 'ok' : ev.status === 'MERAH' ? 'danger' : 'warn', title, msg);
+                    }
+                    clearTimeout(reconcile);
+                    reconcile = setTimeout(() => { if (!document.hidden) load(); }, 1200);
+                });
+            });
+        });
     }
 
     load();

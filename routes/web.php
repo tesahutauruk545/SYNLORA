@@ -3,6 +3,7 @@
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DosenMonitorController;
+use App\Http\Controllers\LiveMeetingController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoomController;
@@ -52,6 +53,9 @@ Route::middleware('auth')->group(function () {
         Route::delete('/rooms/{room}/members/{member}', [RoomController::class, 'removeMember'])->whereNumber('member')->name('rooms.members.remove');
         Route::get('/rooms/{room}/activities', [RoomController::class, 'activities'])->middleware('throttle:60,1')->name('rooms.getActivities');
         Route::post('/rooms/{room}/sessions', [SessionController::class, 'storeInRoom'])->name('rooms.sessions.store');
+
+        // Live Meeting (LiveKit): token dibuat di server, hanya untuk anggota room
+        Route::post('/rooms/{room}/meeting/token', [LiveMeetingController::class, 'token'])->middleware('throttle:30,1')->name('rooms.meeting.token');
 
         // Materi
         Route::post('/rooms/{room}/materials', [MaterialController::class, 'store'])->name('materials.store');
