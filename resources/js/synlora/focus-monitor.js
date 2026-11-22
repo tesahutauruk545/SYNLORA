@@ -1,4 +1,3 @@
-import { cameraHub } from './camera-hub.js';
 import { computeFocus, THRESHOLDS, eventForTransition, SIGNALS, meanLuminance, estimateHeadPose, Hysteresis } from './focus-state.js';
 
 /** ID acak untuk mendeteksi dua tab / dua browser pada satu sesi (bukan identitas pribadi). */
@@ -221,8 +220,10 @@ export class FocusMonitor {
         }
 
         try {
-            // Satu sumber kamera bersama Study Meet (LiveKit): tidak ada getUserMedia ganda.
-            this.stream = await cameraHub.acquire('monitor');
+            this.stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 } },
+                audio: false,
+            });
         } catch (err) {
             this.wantCamera = false;
             this.o.onError(this.#cameraErrorMessage(err));
@@ -316,8 +317,7 @@ export class FocusMonitor {
 
     #stopStream() {
         if (this.stream) {
-            // Hanya melepas bagian monitor; kamera fisik tetap menyala bila Study Meet masih memakainya.
-            cameraHub.release('monitor');
+            this.stream.getTracks().forEach((t) => t.stop());
             this.stream = null;
         }
         if (this.o.video) this.o.video.srcObject = null;

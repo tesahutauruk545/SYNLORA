@@ -1,24 +1,4 @@
 {
-  "_camera-hub-tawKCAwq.js": {
-    "file": "assets/camera-hub-tawKCAwq.js",
-    "name": "camera-hub"
-  },
-  "_pusher-C1X9j3Pn.js": {
-    "file": "assets/pusher-C1X9j3Pn.js",
-    "name": "pusher",
-    "isDynamicEntry": true
-  },
-  "_realtime-MARklm93.js": {
-    "file": "assets/realtime-MARklm93.js",
-    "name": "realtime",
-    "imports": [
-      "resources/js/app.js"
-    ],
-    "dynamicImports": [
-      "node_modules/laravel-echo/dist/echo.js",
-      "_pusher-C1X9j3Pn.js"
-    ]
-  },
   "node_modules/@fontsource-variable/fraunces/files/fraunces-latin-ext-wght-italic.woff2": {
     "file": "assets/fraunces-latin-ext-wght-italic-BfTTTDIL.woff2",
     "src": "node_modules/@fontsource-variable/fraunces/files/fraunces-latin-ext-wght-italic.woff2"
@@ -65,14 +45,8 @@
     "src": "node_modules/@mediapipe/tasks-vision/vision_bundle.mjs",
     "isDynamicEntry": true
   },
-  "node_modules/laravel-echo/dist/echo.js": {
-    "file": "assets/echo-mC6gByb-.js",
-    "name": "echo",
-    "src": "node_modules/laravel-echo/dist/echo.js",
-    "isDynamicEntry": true
-  },
   "resources/css/app.css": {
-    "file": "assets/app-C2OMHDPD.css",
+    "file": "assets/app-gL9UzuYe.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -82,14 +56,13 @@
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-mJawrN1Q.js",
+    "file": "assets/app-4rKwvSUt.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "dynamicImports": [
       "resources/js/synlora/session-page.js",
-      "resources/js/synlora/lecturer-monitor.js",
-      "resources/js/synlora/live-meeting.js"
+      "resources/js/synlora/lecturer-monitor.js"
     ]
   },
   "resources/js/landing.js": {
@@ -99,33 +72,18 @@
     "isEntry": true
   },
   "resources/js/synlora/lecturer-monitor.js": {
-    "file": "assets/lecturer-monitor-_-FLV6Ll.js",
+    "file": "assets/lecturer-monitor-Bsc2daTU.js",
     "name": "lecturer-monitor",
     "src": "resources/js/synlora/lecturer-monitor.js",
-    "isDynamicEntry": true,
-    "imports": [
-      "_realtime-MARklm93.js",
-      "resources/js/app.js"
-    ]
-  },
-  "resources/js/synlora/live-meeting.js": {
-    "file": "assets/live-meeting-DqjdrHNN.js",
-    "name": "live-meeting",
-    "src": "resources/js/synlora/live-meeting.js",
-    "isDynamicEntry": true,
-    "imports": [
-      "_camera-hub-tawKCAwq.js"
-    ]
+    "isDynamicEntry": true
   },
   "resources/js/synlora/session-page.js": {
-    "file": "assets/session-page-BghlJXJD.js",
+    "file": "assets/session-page-DDdtvO7w.js",
     "name": "session-page",
     "src": "resources/js/synlora/session-page.js",
     "isDynamicEntry": true,
     "imports": [
-      "resources/js/app.js",
-      "_camera-hub-tawKCAwq.js",
-      "_realtime-MARklm93.js"
+      "resources/js/app.js"
     ],
     "dynamicImports": [
       "node_modules/@mediapipe/tasks-vision/vision_bundle.mjs"

@@ -504,7 +504,6 @@ class StudySession extends Model
             'reason' => mb_substr($reason, 0, 255),
             'occurred_at' => $at,
         ]);
-        $previousStatus = $last?->status;
 
         // Salinan status terakhir untuk dashboard (tanpa query focus_logs per mahasiswa).
         DB::table('study_sessions')->where('id', $this->id)->update([
@@ -521,9 +520,6 @@ class StudySession extends Model
                 ->where('room_id', $this->room_id)
                 ->where('user_id', $this->user_id)
                 ->update(['focus_status' => $status, 'last_active' => $at, 'updated_at' => now()]);
-
-            // Realtime: hanya saat status benar-benar berubah (logFocus sudah membuang status yang sama).
-            \App\Events\FocusStatusChanged::announce($this, $status, $previousStatus, $reason, $source, $event, $at);
         }
 
         return $log;

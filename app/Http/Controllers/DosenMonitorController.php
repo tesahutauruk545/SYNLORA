@@ -20,9 +20,6 @@ class DosenMonitorController extends Controller
                 'dataUrl' => route('dosen.data'),
                 'historyUrl' => url('/dosen/mahasiswa/__ID__/riwayat'),
                 'pollSeconds' => (int) config('synlora.monitor.poll_seconds', 5),
-                // Realtime (Reverb). Channel privat divalidasi ulang di backend (routes/channels.php).
-                'realtime' => \App\Support\Realtime::config(),
-                'roomCodes' => $rooms->pluck('code')->values()->all(),
             ],
         ]);
     }

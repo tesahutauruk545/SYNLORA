@@ -1,8 +1,6 @@
 import { PomodoroUI } from './pomodoro.js';
 import { FocusMonitor } from './focus-monitor.js';
 import { RoomFeed } from './room-feed.js';
-import { notify } from './notify.js';
-import { getEcho, describe } from './realtime.js';
 
 const STYLE = {
     HIJAU: { box: 'bg-emerald-50 border-emerald-500', text: 'text-emerald-700', icon: '🟢', title: 'Fokus terindikasi' },
@@ -126,22 +124,10 @@ export function init(cfg) {
     const btnOn = $('btn-enable-camera');
     const btnOff = $('btn-disable-camera');
 
-    // Peringatan langsung untuk mahasiswa saat wajah hilang 5 detik, dan informasi pemulihan saat kembali (tanpa pengulangan).
-    let prevFaceLost = false;
-    const studentNotify = (status, reason, source) => {
-        const lost = status === 'KUNING' && source === 'face';
-        if (lost && !prevFaceLost) {
-            notify('warn', 'Wajah tidak terdeteksi 5 detik', 'Posisikan wajah di depan kamera agar status fokus kembali HIJAU.' + (cfg.mode === 'room' ? ' Dosen di room ini (jika ada) ikut diberi tahu.' : ''));
-        } else if (!lost && prevFaceLost && status === 'HIJAU') {
-            notify('ok', 'Wajah terdeteksi kembali', 'Status fokus Anda pulih ke HIJAU.');
-        }
-        prevFaceLost = lost;
-    };
-
     const monitor = new FocusMonitor({
         video: $('camera-feed'),
         send,
-        onStatus: (status, reason, source) => { paintStatus(status, reason, source); studentNotify(status, reason, source); },
+        onStatus: paintStatus,
         onError: (msg) => {
             if (camErr) {
                 camErr.textContent = msg || '';
@@ -192,33 +178,6 @@ export function init(cfg) {
 
     paintStatus('ABU', 'Pemantauan belum aktif. Mulai sesi fokus untuk mengaktifkannya.');
     pomodoro.boot();
-
-    // ---- notifikasi realtime (Reverb). Tanpa konfigurasi: tidak aktif, polling yang sudah ada tetap berjalan ----
-    if (cfg.realtime && cfg.roomCode) {
-        getEcho(cfg.realtime, cfg.csrf).then((echo) => {
-            if (!echo) return;
-            if (cfg.canMonitor) {
-                // Dosen anggota room: status mahasiswa diperbarui seketika.
-                const BADGE = { HIJAU: ['🟢 Fokus terindikasi', 'text-emerald-600 font-semibold'], KUNING: ['🟡 Perhatian', 'text-amber-600 font-semibold'], MERAH: ['🔴 Terindikasi terganggu', 'text-rose-600 font-bold'] };
-                echo.private(`room.${cfg.roomCode}.monitor`).listen('.focus.status', (ev) => {
-                    const card = document.querySelector(`[data-member-id="${ev.student_id}"] [data-role="focus"]`);
-                    const b = BADGE[ev.status];
-                    if (card && b) { card.className = `text-xs mt-1 ${b[1]}`; card.textContent = b[0]; }
-                    if (ev.notify) {
-                        const [title, msg] = describe(ev, false);
-                        notify(ev.kind === 'recovered' ? 'ok' : ev.status === 'MERAH' ? 'danger' : 'warn', title, msg);
-                    }
-                });
-            } else if (cfg.userId) {
-                // Mahasiswa: hanya channel pribadinya. Bila perangkat ini sendiri yang memantau, peringatan lokal sudah tampil.
-                echo.private(`App.Models.User.${cfg.userId}`).listen('.focus.status', (ev) => {
-                    if (!ev.notify || monitor.running) return;
-                    const [title, msg] = describe(ev, true);
-                    notify(ev.kind === 'recovered' ? 'ok' : 'warn', title, msg);
-                });
-            }
-        });
-    }
 
     // ---- feed aktivitas room ----
     if (cfg.feedUrl) {
