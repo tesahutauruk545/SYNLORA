@@ -36,7 +36,6 @@ const PRESENCE_CLASS = {
     belajar: 'text-emerald-600 font-semibold',
     istirahat: 'text-amber-600 font-semibold',
     jeda: 'text-slate-500 font-semibold',
-    online: 'text-sky-600 font-semibold',
     offline: 'text-slate-400',
 };
 

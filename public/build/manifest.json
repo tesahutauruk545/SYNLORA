@@ -46,7 +46,7 @@
     "isDynamicEntry": true
   },
   "resources/css/app.css": {
-    "file": "assets/app-BaRYGafw.css",
+    "file": "assets/app-gL9UzuYe.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -56,14 +56,13 @@
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-BK31mJkV.js",
+    "file": "assets/app-4rKwvSUt.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "dynamicImports": [
       "resources/js/synlora/session-page.js",
-      "resources/js/synlora/lecturer-monitor.js",
-      "resources/js/synlora/presence.js"
+      "resources/js/synlora/lecturer-monitor.js"
     ]
   },
   "resources/js/landing.js": {
@@ -73,19 +72,13 @@
     "isEntry": true
   },
   "resources/js/synlora/lecturer-monitor.js": {
-    "file": "assets/lecturer-monitor-B0aq7bLg.js",
+    "file": "assets/lecturer-monitor-Bsc2daTU.js",
     "name": "lecturer-monitor",
     "src": "resources/js/synlora/lecturer-monitor.js",
     "isDynamicEntry": true
   },
-  "resources/js/synlora/presence.js": {
-    "file": "assets/presence-BCzmdzRD.js",
-    "name": "presence",
-    "src": "resources/js/synlora/presence.js",
-    "isDynamicEntry": true
-  },
   "resources/js/synlora/session-page.js": {
-    "file": "assets/session-page-Dkrco81x.js",
+    "file": "assets/session-page-DDdtvO7w.js",
     "name": "session-page",
     "src": "resources/js/synlora/session-page.js",
     "isDynamicEntry": true,

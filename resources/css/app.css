@@ -132,7 +132,6 @@
     .dot-HIJAU { @apply bg-emerald-400; }
     .dot-KUNING { @apply bg-amber-400; }
     .dot-MERAH { @apply bg-rose-400; }
-    .dot-ONLINE { @apply bg-sky-400; }
     .dot-ABU { background: #9a95b3; }
     .dot-DISCONNECTED { background: #6b6788; }
     .dot-UNKNOWN { @apply bg-transparent ring-2; --tw-ring-color: #9a95b3; }

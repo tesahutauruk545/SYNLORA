@@ -5,9 +5,6 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta name="theme-color" content="#0b0a1c">
-        @auth
-            <meta name="synlora-presence" content="{{ route('presence.ping') }}" data-interval="{{ (int) config('synlora.presence.ping_seconds', 25) }}">
-        @endauth
 
         <title>{{ config('app.name', 'SYNLORA') }}</title>
         <link rel="icon" href="{{ asset('images/logo.png') }}">

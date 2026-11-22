@@ -76,7 +76,7 @@ class FocusIntegrity
     /** Laporan lengkap satu sesi: kategori + metrik + linimasa episode. */
     public static function report(StudySession $s): array
     {
-        $s->load('room:id,name,strict_mode,ai_policy');
+        $s->loadMissing('room:id,name,strict_mode,ai_policy');
         $end = $s->ended_at ?? now();
         $ongoing = ! $s->ended_at;
         $stale = (int) config('synlora.focus.stale_seconds', 60);

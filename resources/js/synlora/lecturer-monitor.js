@@ -11,7 +11,7 @@ const STATUS = {
     UNKNOWN: { label: 'Belum ada data', cls: 'text-slate-500' },
 };
 const SOURCE = { browser: 'browser', face: 'wajah', orientation: 'orientasi HP', system: 'sistem', server: 'server' };
-const PRESENCE = { belajar: 'Belajar', istirahat: 'Istirahat', jeda: 'Dijeda', online: 'Online', offline: 'Offline' };
+const PRESENCE = { belajar: 'Belajar', istirahat: 'Istirahat', jeda: 'Dijeda', offline: 'Offline' };
 const SEVERITY = { MERAH: 0, DISCONNECTED: 1, KUNING: 2, UNKNOWN: 3, HIJAU: 4, ABU: 5 };
 const EVENT_LABEL = {
     SESSION_START: 'Sesi dimulai', SESSION_PAUSE: 'Sesi dijeda', SESSION_RESUME: 'Sesi dilanjutkan', SESSION_END: 'Sesi selesai',
@@ -65,17 +65,13 @@ export function init(cfg) {
     };
 
     function statusCell(s) {
-        // Online tanpa sesi / offline: tampilkan status website, bukan "Tidak aktif" yang menyesatkan.
-        const meta = s.presence === 'online' ? { label: 'Online', cls: 'text-sky-700' }
-            : s.presence === 'offline' && s.status === 'ABU' ? { label: 'Offline', cls: 'text-slate-500' }
-            : (STATUS[s.status] || STATUS.ABU);
-        const dot = s.presence === 'online' ? 'ONLINE' : s.status;
+        const meta = STATUS[s.status] || STATUS.ABU;
         const wrap = el('div', 'min-w-0');
         const top = el('div', `flex items-center gap-2 font-semibold ${meta.cls}`);
-        top.append(el('span', `dot dot-${dot}`), document.createTextNode(meta.label));
+        top.append(el('span', `dot dot-${s.status}`), document.createTextNode(meta.label));
         wrap.append(top);
         const why = s.source === 'system' ? (s.reason || '') : (SOURCE[s.source] || '');
-        const sub = el('div', 'mt-0.5 truncate text-xs text-synlora-900/55', `${s.presence === 'online' ? 'Belum memulai sesi' : (PRESENCE[s.presence] || '')}${s.presence === 'belajar' && why ? ` · ${why}` : ''}${s.presence === 'belajar' ? ` · ${s.camera === 'CAMERA_ON' ? 'kamera' : 'tanpa kamera'}` : ''}`);
+        const sub = el('div', 'mt-0.5 truncate text-xs text-synlora-900/55', `${PRESENCE[s.presence] || ''}${s.presence === 'belajar' && why ? ` · ${why}` : ''}${s.presence === 'belajar' ? ` · ${s.camera === 'CAMERA_ON' ? 'kamera' : 'tanpa kamera'}` : ''}`);
         sub.title = `${s.reason || ''} | ${s.camera_label || ''}`;
         wrap.append(sub);
         return wrap;
@@ -83,7 +79,7 @@ export function init(cfg) {
 
     function pomodoroCell(s) {
         const wrap = el('div', 'text-sm');
-        if (s.presence === 'offline' || s.presence === 'online') {
+        if (s.presence === 'offline') {
             wrap.append(el('span', 'text-synlora-900/45', `${s.today_pomodoros} selesai hari ini`));
         } else {
             const phase = s.phase === 'BREAK' ? 'Istirahat' : 'Fokus';
@@ -106,10 +102,9 @@ export function init(cfg) {
         const today = el('div', 'text-sm');
         today.append(el('span', 'md:hidden text-xs text-synlora-900/45', 'Hari ini '), el('span', 'font-medium', mm(s.today_seconds)));
 
-        const lost = s.presence !== 'offline' && s.presence !== 'online' && s.status === 'DISCONNECTED';
+        const lost = s.presence !== 'offline' && s.status === 'DISCONNECTED';
         const seen = el('div', `text-xs ${lost ? 'font-medium text-amber-700' : 'text-synlora-900/55'}`,
             s.presence === 'offline' ? (s.last_seen ? `Terakhir ${s.last_seen}` : 'Belum pernah')
-                : s.presence === 'online' ? 'Sedang terhubung'
                 : lost ? `Terputus, terakhir ${s.last_seen || '—'}` : 'Sedang terhubung');
 
         const btn = el('button', 'btn-ghost col-span-2 !px-4 !py-2 text-sm md:col-span-1 md:w-20', 'Riwayat');

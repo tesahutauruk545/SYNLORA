@@ -7,7 +7,6 @@ use App\Models\FocusLog;
 use App\Services\ClientTracker;
 use App\Services\FocusRules;
 use App\Services\LecturerMonitor;
-use App\Services\OnlinePresence;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Room;
 use App\Models\StudySession;
@@ -61,10 +60,7 @@ class SessionController extends Controller
         $recap = SessionRecap::build($session);
         $isMine = (int) $session->user_id === (int) $request->user()->id;
 
-        // Kebijakan AI dibaca langsung dari room (relasi bisa saja sudah dimuat dengan kolom terbatas).
-        $aiPolicy = $session->room_id ? (Room::whereKey($session->room_id)->value('ai_policy') ?: 'declare') : null;
-
-        return view('sessions.recap', $recap + ['isMine' => $isMine, 'aiPolicy' => $aiPolicy]);
+        return view('sessions.recap', $recap + ['isMine' => $isMine]);
     }
 
     // ------------------------------------------------------- API (JSON)
@@ -86,9 +82,6 @@ class SessionController extends Controller
             'consented_at' => $room->strict_mode ? now() : null,
         ]);
 
-        OnlinePresence::touch((int) $request->user()->id);
-        LecturerMonitor::forgetFor($session);
-
         return response()->json($this->payload($session), 201);
     }
 
@@ -102,8 +95,6 @@ class SessionController extends Controller
 
         $session = StudySession::begin($request->user(), null, $data['focus_minutes'], $data['break_minutes'], ['study_goal' => $data['study_goal'] ?? null]);
 
-        OnlinePresence::touch((int) $request->user()->id);
-
         return response()->json($this->payload($session), 201);
     }
 
@@ -111,7 +102,6 @@ class SessionController extends Controller
     {
         $this->authorize('control', $session);
 
-        OnlinePresence::touch((int) $session->user_id);
         $session->sync()->heartbeat();
 
         return response()->json($this->payload($session->fresh()));
@@ -132,7 +122,6 @@ class SessionController extends Controller
             'tab_id' => ['nullable', 'string', 'max:40', 'regex:/^[A-Za-z0-9_-]+$/'],
         ]);
 
-        OnlinePresence::touch((int) $session->user_id);
         $prev = $session->last_heartbeat_at;
 
         if ($session->needsSync()) {
@@ -176,8 +165,6 @@ class SessionController extends Controller
         $this->authorize('control', $session);
 
         DB::transaction(fn () => StudySession::whereKey($session->id)->lockForUpdate()->first()->pause());
-        OnlinePresence::touch((int) $session->user_id);
-        LecturerMonitor::forgetFor($session);
 
         return response()->json($this->payload($session->fresh()));
     }
@@ -187,8 +174,6 @@ class SessionController extends Controller
         $this->authorize('control', $session);
 
         DB::transaction(fn () => StudySession::whereKey($session->id)->lockForUpdate()->first()->resume());
-        OnlinePresence::touch((int) $session->user_id);
-        LecturerMonitor::forgetFor($session);
 
         return response()->json($this->payload($session->fresh()));
     }
@@ -198,8 +183,6 @@ class SessionController extends Controller
         $this->authorize('control', $session);
 
         DB::transaction(fn () => StudySession::whereKey($session->id)->lockForUpdate()->first()->finish('manual'));
-        OnlinePresence::touch((int) $session->user_id);
-        LecturerMonitor::forgetFor($session);
 
         return response()->json($this->payload($session->fresh()));
     }
@@ -228,7 +211,6 @@ class SessionController extends Controller
             return response()->json(['ok' => true, 'duplicate' => true]);
         }
 
-        OnlinePresence::touch((int) $session->user_id);
         $session->sync();
 
         if (! $session->isActive() || $session->phase !== StudySession::FOCUS) {
@@ -278,52 +260,6 @@ class SessionController extends Controller
         LecturerMonitor::forgetFor($session);
 
         return response()->json(['ok' => true]);
-    }
-
-    /**
-     * Refleksi sesi + deklarasi penggunaan AI. Kebijakan AI room DITEGAKKAN DI SINI (server), bukan di tampilan:
-     *  - forbidden : hanya "none" yang diterima; mengaku memakai AI ditolak (422).
-     *  - declare   : bila memakai AI, catatan penggunaan wajib diisi.
-     *  - allowed   : semua pilihan diterima.
-     * Kebijakan dibaca dari room saat ini (bukan dari kiriman klien). Sesi solo (tanpa room) tidak dibatasi.
-     */
-    public function reflection(Request $request, StudySession $session): JsonResponse
-    {
-        $this->authorize('control', $session);
-
-        $data = $request->validate([
-            'reflection' => ['nullable', 'string', 'max:2000'],
-            'ai_usage' => ['required', 'string', 'in:none,idea,explain,draft'],
-            'ai_usage_note' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        $room = $session->room_id ? Room::find($session->room_id, ['id', 'strict_mode', 'ai_policy']) : null;
-        $policy = $room?->ai_policy ?: 'declare';
-        $usesAi = $data['ai_usage'] !== 'none';
-        $note = trim((string) ($data['ai_usage_note'] ?? ''));
-
-        if ($room && $policy === 'forbidden' && $usesAi) {
-            return response()->json([
-                'message' => 'Room ini melarang penggunaan AI. Pilihan penggunaan AI tidak dapat disimpan.',
-                'errors' => ['ai_usage' => ['Penggunaan AI tidak diperbolehkan di room ini.']],
-            ], 422);
-        }
-
-        if ($room && $policy === 'declare' && $usesAi && $note === '') {
-            return response()->json([
-                'message' => 'Room ini mewajibkan deklarasi penggunaan AI. Jelaskan bagaimana AI dipakai.',
-                'errors' => ['ai_usage_note' => ['Catatan penggunaan AI wajib diisi.']],
-            ], 422);
-        }
-
-        $session->forceFill([
-            'reflection' => isset($data['reflection']) ? trim($data['reflection']) ?: null : null,
-            'ai_usage' => $data['ai_usage'],
-            'ai_usage_note' => $usesAi ? mb_substr($note, 0, 255) ?: null : null,
-            'reflected_at' => now(),
-        ])->save();
-
-        return response()->json(['ok' => true, 'ai_policy' => $policy]);
     }
 
     // ----------------------------------------------------------- helper
