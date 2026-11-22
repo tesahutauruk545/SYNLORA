@@ -17,36 +17,39 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('rooms', function (Blueprint $t) {
-            if (! Schema::hasColumn('rooms', 'strict_mode')) {
-                $t->boolean('strict_mode')->default(false);
-                $t->string('ai_policy', 12)->default('declare'); // forbidden | declare | allowed
-            }
-        });
+        // Idempotent PER KOLOM: aman dijalankan ulang, dan aman bila sebagian kolom sudah ada di hosting.
+        $this->addMissing('rooms', [
+            'strict_mode' => fn (Blueprint $t) => $t->boolean('strict_mode')->default(false),
+            'ai_policy' => fn (Blueprint $t) => $t->string('ai_policy', 12)->default('declare'), // forbidden | declare | allowed
+        ]);
 
-        Schema::table('study_sessions', function (Blueprint $t) {
-            if (! Schema::hasColumn('study_sessions', 'mode')) {
-                $t->string('mode', 10)->default('standard');
-                $t->unsignedSmallInteger('heartbeat_lost_count')->default(0);
-                $t->unsignedSmallInteger('multi_device_count')->default(0);
-                $t->unsignedSmallInteger('multi_tab_count')->default(0);
-                $t->unsignedSmallInteger('camera_issue_count')->default(0);
-                $t->string('study_goal', 160)->nullable();
-                $t->text('reflection')->nullable();
-                $t->string('ai_usage', 12)->nullable(); // none | idea | explain | draft
-                $t->string('ai_usage_note', 255)->nullable();
-                $t->timestamp('reflected_at')->nullable();
-                $t->timestamp('consented_at')->nullable();
-            }
-        });
+        $this->addMissing('study_sessions', [
+            'mode' => fn (Blueprint $t) => $t->string('mode', 10)->default('standard'),
+            'heartbeat_lost_count' => fn (Blueprint $t) => $t->unsignedSmallInteger('heartbeat_lost_count')->default(0),
+            'multi_device_count' => fn (Blueprint $t) => $t->unsignedSmallInteger('multi_device_count')->default(0),
+            'multi_tab_count' => fn (Blueprint $t) => $t->unsignedSmallInteger('multi_tab_count')->default(0),
+            'camera_issue_count' => fn (Blueprint $t) => $t->unsignedSmallInteger('camera_issue_count')->default(0),
+            'study_goal' => fn (Blueprint $t) => $t->string('study_goal', 160)->nullable(),
+            'reflection' => fn (Blueprint $t) => $t->text('reflection')->nullable(),
+            'ai_usage' => fn (Blueprint $t) => $t->string('ai_usage', 12)->nullable(), // none | idea | explain | draft
+            'ai_usage_note' => fn (Blueprint $t) => $t->string('ai_usage_note', 255)->nullable(),
+            'reflected_at' => fn (Blueprint $t) => $t->timestamp('reflected_at')->nullable(),
+            'consented_at' => fn (Blueprint $t) => $t->timestamp('consented_at')->nullable(),
+        ]);
     }
 
+    /** Menambah hanya kolom yang BELUM ada, satu per satu. Tidak pernah mengubah/menghapus data. */
+    private function addMissing(string $table, array $columns): void
+    {
+        foreach ($columns as $name => $define) {
+            if (! Schema::hasColumn($table, $name)) {
+                Schema::table($table, fn (Blueprint $t) => $define($t));
+            }
+        }
+    }
+
+    /** Sengaja tidak menghapus kolom: rollback tidak boleh menghilangkan data pengguna/riwayat belajar. */
     public function down(): void
     {
-        Schema::table('study_sessions', fn (Blueprint $t) => $t->dropColumn([
-            'mode', 'heartbeat_lost_count', 'multi_device_count', 'multi_tab_count', 'camera_issue_count',
-            'study_goal', 'reflection', 'ai_usage', 'ai_usage_note', 'reflected_at', 'consented_at',
-        ]));
-        Schema::table('rooms', fn (Blueprint $t) => $t->dropColumn(['strict_mode', 'ai_policy']));
     }
 };

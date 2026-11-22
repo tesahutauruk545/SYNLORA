@@ -4,6 +4,7 @@ use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DosenMonitorController;
 use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\PresenceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\SessionController;
@@ -36,6 +37,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Presence online (ping ringan dari semua halaman setelah login).
+    Route::post('/presence/ping', [PresenceController::class, 'ping'])->middleware('throttle:20,1')->name('presence.ping');
 
     // ------------------------------------------------------------ Room
     Route::get('/rooms/create', [RoomController::class, 'create'])->name('rooms.create');
@@ -89,6 +93,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/sessions/{session}/resume', [SessionController::class, 'resume'])->name('sessions.resume');
     Route::post('/sessions/{session}/finish', [SessionController::class, 'finish'])->name('sessions.finish');
     Route::post('/sessions/{session}/heartbeat', [SessionController::class, 'heartbeat'])->middleware('throttle:60,1')->name('sessions.heartbeat');
+    Route::post('/sessions/{session}/reflection', [SessionController::class, 'reflection'])->middleware('throttle:30,1')->name('sessions.reflection');
     Route::post('/sessions/{session}/events', [SessionController::class, 'events'])->middleware('throttle:240,1')->name('sessions.events');
 });
 

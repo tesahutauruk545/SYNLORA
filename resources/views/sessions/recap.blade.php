@@ -57,6 +57,63 @@
                 </div>
             </div>
 
+            @if ($isMine)
+                @php
+                    $aiPolicy = $aiPolicy ?? 'declare';
+                    $aiLabels = ['none' => 'Tidak memakai AI', 'idea' => 'AI untuk ide', 'explain' => 'AI untuk penjelasan', 'draft' => 'AI untuk draf'];
+                    $aiOptions = ($session->room && $aiPolicy === 'forbidden') ? ['none' => $aiLabels['none']] : $aiLabels;
+                @endphp
+                <div class="card overflow-hidden mb-6">
+                    <form id="reflection-form" class="p-6 space-y-3" data-url="{{ route('sessions.reflection', $session) }}">
+                        <h4 class="text-lg font-semibold text-synlora-900">Refleksi &amp; deklarasi AI</h4>
+                        @if ($session->room)
+                            <p class="text-xs text-synlora-600">
+                                Kebijakan AI room:
+                                <strong>{{ ['forbidden' => 'tidak diperbolehkan', 'declare' => 'boleh, wajib dideklarasikan', 'allowed' => 'boleh'][$aiPolicy] ?? $aiPolicy }}</strong>
+                            </p>
+                        @endif
+                        <label class="block text-sm text-synlora-700">Refleksi singkat (opsional)
+                            <textarea name="reflection" maxlength="2000" rows="3" class="mt-1 w-full rounded-xl border-sand-300 text-sm">{{ $session->reflection }}</textarea>
+                        </label>
+                        <label class="block text-sm text-synlora-700">Penggunaan AI pada sesi ini
+                            <select name="ai_usage" class="mt-1 w-full rounded-xl border-sand-300 text-sm">
+                                @foreach ($aiOptions as $v => $l)
+                                    <option value="{{ $v }}" @selected(($session->ai_usage ?? 'none') === $v)>{{ $l }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        @if (! $session->room || $aiPolicy !== 'forbidden')
+                            <label class="block text-sm text-synlora-700">Catatan penggunaan AI {{ $aiPolicy === 'declare' && $session->room ? '(wajib bila memakai AI)' : '(opsional)' }}
+                                <input name="ai_usage_note" maxlength="255" value="{{ $session->ai_usage_note }}" class="mt-1 w-full rounded-xl border-sand-300 text-sm">
+                            </label>
+                        @endif
+                        <div class="flex items-center gap-3">
+                            <button class="btn-primary !px-4 !py-2 text-sm">Simpan</button>
+                            <span id="reflection-msg" class="text-sm" role="status"></span>
+                        </div>
+                    </form>
+                </div>
+                <script>
+                    (() => {
+                        const f = document.getElementById('reflection-form'), msg = document.getElementById('reflection-msg');
+                        f.addEventListener('submit', async (e) => {
+                            e.preventDefault();
+                            msg.textContent = 'Menyimpan…'; msg.className = 'text-sm text-synlora-600';
+                            try {
+                                const res = await fetch(f.dataset.url, {
+                                    method: 'POST', credentials: 'same-origin',
+                                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                                    body: JSON.stringify(Object.fromEntries(new FormData(f))),
+                                });
+                                const j = await res.json().catch(() => ({}));
+                                msg.textContent = res.ok ? 'Tersimpan.' : (j.message || 'Gagal menyimpan.');
+                                msg.className = res.ok ? 'text-sm text-emerald-700' : 'text-sm text-rose-700';
+                            } catch (err) { msg.textContent = 'Gagal menyimpan. Periksa koneksi.'; msg.className = 'text-sm text-rose-700'; }
+                        });
+                    })();
+                </script>
+            @endif
+
             <!-- Waktu -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div class="card overflow-hidden border-l-4 border-synlora-500">

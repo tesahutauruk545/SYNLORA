@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Room;
 use App\Models\StudySession;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
@@ -58,19 +59,25 @@ class RoomPresence
             ->keyBy('user_id');
 
         $members = $room->members()->get(['users.id', 'users.name', 'users.role'])->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values();
+        $seen = OnlinePresence::lastSeen($members->pluck('id'));
+        $nowTs = now()->getTimestamp();
 
-        return $members->map(function (User $member) use ($open, $room) {
+        return $members->map(function (User $member) use ($open, $room, $seen, $nowTs) {
             /** @var StudySession|null $s */
             $s = $open->get($member->id);
 
-            [$state, $label] = match (true) {
-                $s === null => ['offline', 'Tidak sedang belajar'],
-                $s->isPaused() => ['jeda', 'Sesi dijeda'],
-                $s->phase === StudySession::BREAK => ['istirahat', 'Istirahat'],
-                default => ['belajar', 'Sedang belajar'],
+            // ONLINE (membuka website) dipisah dari status belajar: tanpa sesi Pomodoro tetap bisa online.
+            $online = OnlinePresence::isOnline($seen[$member->id] ?? null, $s, $nowTs);
+            $state = OnlinePresence::state($online, $s);
+            $label = match ($state) {
+                'offline' => 'Offline',
+                'online' => 'Online',
+                'jeda' => 'Sesi dijeda',
+                'istirahat' => 'Istirahat',
+                default => 'Sedang belajar',
             };
 
-            $focus = $s ? $s->displayFocus() : ['ABU', 'Tidak ada sesi', 'system'];
+            $focus = $s && $online ? $s->displayFocus() : ['ABU', 'Tidak ada sesi', 'system'];
 
             return [
                 'id' => $member->id,
@@ -81,7 +88,7 @@ class RoomPresence
                 'presence_label' => $label,
                 'focus_status' => $focus[0],
                 'focus_source' => $focus[2],
-                'last_active' => $s && $s->last_heartbeat_at ? $s->last_heartbeat_at->diffForHumans() : null,
+                'last_active' => isset($seen[$member->id]) ? Carbon::createFromTimestamp($seen[$member->id])->diffForHumans() : ($s && $s->last_heartbeat_at ? $s->last_heartbeat_at->diffForHumans() : null),
             ];
         })->all();
     }

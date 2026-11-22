@@ -100,6 +100,10 @@ class LecturerMonitor
         });
         $open = $open->filter->isOpen()->keyBy('user_id');
 
+        // 2b) Presence ONLINE website (ping/heartbeat server-side). Hanya untuk mahasiswa dalam cakupan room dosen ini.
+        $seenOnline = OnlinePresence::lastSeen($userIds);
+        $nowTs = $now->getTimestamp();
+
         // 3) Rekap hari ini (hanya sesi di room dosen ini).
         $today = StudySession::whereIn('user_id', $userIds)
             ->whereIn('room_id', $roomIds)
@@ -128,16 +132,21 @@ class LecturerMonitor
                 $secs += $s->effectiveSecondsNow() - (int) $s->total_effective_seconds;
             }
 
-            [$status, $reason, $source] = $s ? $s->displayFocus($now) : ['ABU', 'Tidak sedang belajar', 'system'];
-            $presence = match (true) {
-                ! $s => 'offline',
-                $s->isPaused() => 'jeda',
-                $s->phase === StudySession::BREAK => 'istirahat',
-                default => 'belajar',
+            // ONLINE (membuka website) ditentukan oleh ping/heartbeat, BUKAN oleh ada-tidaknya sesi Pomodoro.
+            $online = OnlinePresence::isOnline($seenOnline[$uid] ?? null, $s, $nowTs);
+            $presence = OnlinePresence::state($online, $s);
+
+            [$status, $reason, $source] = match (true) {
+                $s !== null => $s->displayFocus($now),
+                $online => ['ABU', 'Online, belum memulai sesi', 'system'],
+                default => ['ABU', 'Offline', 'system'],
             };
 
             $seen = $lastSeenAll[$uid] ?? null;
             $seenTs = $seen ? Carbon::parse($seen)->getTimestamp() : null;
+            if (isset($seenOnline[$uid])) {
+                $seenTs = max($seenTs ?? 0, $seenOnline[$uid]);
+            }
 
             $students[] = [
                 'id' => (int) $uid,
@@ -149,6 +158,7 @@ class LecturerMonitor
                 'status' => $status,
                 'source' => $source,
                 'reason' => $reason,
+                'online' => $online,
                 'camera_on' => (bool) ($s?->camera_on),
                 'camera' => $s ? $s->cameraInfo()['camera'] : 'CAMERA_OFF',
                 'camera_label' => $s ? $s->cameraInfo()['camera_label'] : 'Kamera tidak dipakai',
@@ -176,6 +186,7 @@ class LecturerMonitor
             'summary' => [
                 'total' => count($students),
                 'studying' => $studying,
+                'online' => count(array_filter($students, fn ($x) => $x['online'])),
                 'HIJAU' => $count('HIJAU'),
                 'KUNING' => $count('KUNING'),
                 'MERAH' => $count('MERAH'),

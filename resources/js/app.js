@@ -38,3 +38,12 @@ const monitorConfig = document.getElementById('monitor-config');
 if (monitorConfig) {
     import('./synlora/lecturer-monitor.js').then((m) => m.init(JSON.parse(monitorConfig.textContent)));
 }
+
+// Presence online: semua halaman pengguna yang sudah login (meta di layout aplikasi).
+const presenceMeta = document.querySelector('meta[name="synlora-presence"]');
+if (presenceMeta) {
+    import('./synlora/presence.js').then((m) => m.startPresence({
+        url: presenceMeta.content,
+        intervalSeconds: Number(presenceMeta.dataset.interval) || 25,
+    }));
+}

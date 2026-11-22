@@ -53,6 +53,13 @@ return [
         'model_remote_url' => 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite',
     ],
 
+    'presence' => [
+        // Browser mengirim ping tiap ~25 dtk. Tanpa ping selama TTL ini -> OFFLINE.
+        // Cukup longgar untuk tab latar belakang (browser menurunkan frekuensi timer), cukup ketat agar offline cepat terlihat.
+        'ttl_seconds' => (int) env('PRESENCE_TTL_SECONDS', 90),
+        'ping_seconds' => (int) env('PRESENCE_PING_SECONDS', 25),
+    ],
+
     'monitor' => [
         'poll_seconds' => (int) env('MONITOR_POLL_SECONDS', 5),
         'cache_seconds' => (int) env('MONITOR_CACHE_SECONDS', 3),
