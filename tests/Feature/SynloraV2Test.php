@@ -61,14 +61,14 @@ class SynloraV2Test extends TestCase
 
     public function test_student_registration_requires_nim_and_kelas(): void
     {
-        $base = ['name' => 'Budi', 'role' => 'mahasiswa', 'email' => 'budi@example.com', 'password' => 'password123', 'password_confirmation' => 'password123'];
+        $base = ['name' => 'Budi', 'role' => 'mahasiswa', 'email' => 'budiuji@gmail.com', 'password' => 'password123', 'password_confirmation' => 'password123'];
 
         $this->post('/register', $base)->assertSessionHasErrors(['nim', 'kelas']);
         $this->post('/register', $base + ['nim' => 'ABC12', 'kelas' => 'A'])->assertSessionHasErrors('nim');
         $this->assertGuest();
 
-        $this->post('/register', $base + ['nim' => '2203111001', 'kelas' => 'ti-2a'])->assertRedirect(route('dashboard'));
-        $u = User::where('email', 'budi@example.com')->first();
+        $this->post('/register', $base + ['nim' => '2203111001', 'kelas' => 'ti-2a'])->assertRedirect(route('verification.notice'));
+        $u = User::where('email', 'budiuji@gmail.com')->first();
         $this->assertSame('mahasiswa', $u->role);
         $this->assertSame('2203111001', $u->nim);
         $this->assertSame('TI-2A', $u->kelas);
@@ -77,21 +77,21 @@ class SynloraV2Test extends TestCase
     public function test_nim_must_be_unique(): void
     {
         User::factory()->create(['nim' => '2203111001']);
-        $this->post('/register', ['name' => 'X', 'role' => 'mahasiswa', 'email' => 'x@example.com', 'nim' => '2203111001', 'kelas' => 'A', 'password' => 'password123', 'password_confirmation' => 'password123'])
+        $this->post('/register', ['name' => 'X', 'role' => 'mahasiswa', 'email' => 'xuser99@gmail.com', 'nim' => '2203111001', 'kelas' => 'A', 'password' => 'password123', 'password_confirmation' => 'password123'])
             ->assertSessionHasErrors('nim');
     }
 
     private function dosenPayload(array $extra = []): array
     {
-        return ['name' => 'Dr. D', 'role' => 'dosen', 'email' => 'd@example.com', 'password' => 'password123', 'password_confirmation' => 'password123'] + $extra;
+        return ['name' => 'Dr. D', 'role' => 'dosen', 'email' => 'dosenuji@gmail.com', 'password' => 'password123', 'password_confirmation' => 'password123'] + $extra;
     }
 
     public function test_dosen_self_register_works_only_in_explicit_open_mode(): void
     {
         config(['synlora.dosen_registration' => 'open']);
 
-        $this->post('/register', $this->dosenPayload())->assertRedirect(route('dosen.monitor'));
-        $this->assertSame('dosen', User::where('email', 'd@example.com')->value('role'));
+        $this->post('/register', $this->dosenPayload())->assertRedirect(route('verification.notice'));
+        $this->assertSame('dosen', User::where('email', 'dosenuji@gmail.com')->value('role'));
     }
 
     public function test_dosen_registration_default_requires_valid_invite_code(): void
@@ -101,21 +101,21 @@ class SynloraV2Test extends TestCase
 
         $this->post('/register', $this->dosenPayload())->assertSessionHasErrors('role');
         $this->post('/register', $this->dosenPayload(['invite_code' => 'salah']))->assertSessionHasErrors('role');
-        $this->assertNull(User::where('email', 'd@example.com')->first());
+        $this->assertNull(User::where('email', 'dosenuji@gmail.com')->first());
 
-        $this->post('/register', $this->dosenPayload(['invite_code' => 'KODE-UJI-123']))->assertRedirect(route('dosen.monitor'));
-        $this->assertSame('dosen', User::where('email', 'd@example.com')->value('role'));
+        $this->post('/register', $this->dosenPayload(['invite_code' => 'KODE-UJI-123']))->assertRedirect(route('verification.notice'));
+        $this->assertSame('dosen', User::where('email', 'dosenuji@gmail.com')->value('role'));
     }
 
     public function test_dosen_registration_fails_safe_when_no_code_configured_or_closed(): void
     {
         config(['synlora.dosen_invite_code' => null]);
         $this->post('/register', $this->dosenPayload(['invite_code' => '']))->assertSessionHasErrors('role');
-        $this->assertNull(User::where('email', 'd@example.com')->first());
+        $this->assertNull(User::where('email', 'dosenuji@gmail.com')->first());
 
         config(['synlora.dosen_registration' => 'closed', 'synlora.dosen_invite_code' => 'KODE']);
         $this->post('/register', $this->dosenPayload(['invite_code' => 'KODE']))->assertSessionHasErrors('role');
-        $this->assertNull(User::where('email', 'd@example.com')->first());
+        $this->assertNull(User::where('email', 'dosenuji@gmail.com')->first());
     }
 
     public function test_dosen_invite_code_attempts_are_rate_limited(): void
@@ -126,14 +126,14 @@ class SynloraV2Test extends TestCase
         }
         // Percobaan ke-6 ditolak walau kodenya benar: brute force kode tidak mungkin.
         $this->post('/register', $this->dosenPayload(['invite_code' => 'KODE-UJI-123']))->assertSessionHasErrors('role');
-        $this->assertNull(User::where('email', 'd@example.com')->first());
+        $this->assertNull(User::where('email', 'dosenuji@gmail.com')->first());
     }
 
     public function test_student_registration_unaffected_by_dosen_gate(): void
     {
-        $this->post('/register', ['name' => 'Budi', 'role' => 'mahasiswa', 'email' => 'budi@example.com', 'nim' => '2203111777', 'kelas' => 'A', 'password' => 'password123', 'password_confirmation' => 'password123'])
-            ->assertRedirect('/dashboard');
-        $this->assertSame('mahasiswa', User::where('email', 'budi@example.com')->value('role'));
+        $this->post('/register', ['name' => 'Budi', 'role' => 'mahasiswa', 'email' => 'budiuji@gmail.com', 'nim' => '2203111777', 'kelas' => 'A', 'password' => 'password123', 'password_confirmation' => 'password123'])
+            ->assertRedirect(route('verification.notice'));
+        $this->assertSame('mahasiswa', User::where('email', 'budiuji@gmail.com')->value('role'));
     }
 
     public function test_register_page_shows_invite_field_only_in_invite_mode(): void

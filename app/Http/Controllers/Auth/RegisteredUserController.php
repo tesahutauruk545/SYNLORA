@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Rules\GmailAddress;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
@@ -39,7 +41,7 @@ class RegisteredUserController extends Controller
 
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
+            'email' => ['bail', 'required', 'string', 'max:255', new GmailAddress, 'unique:'.User::class],
             'role' => ['required', 'in:mahasiswa,dosen'],
             'nim' => [Rule::requiredIf(! $isDosen), 'nullable', 'regex:/^[0-9]{6,20}$/', 'unique:users,nim'],
             'kelas' => [Rule::requiredIf(! $isDosen), 'nullable', 'string', 'max:30', 'regex:/^[A-Z0-9][A-Z0-9 \-\/]*$/'],
@@ -64,12 +66,24 @@ class RegisteredUserController extends Controller
         }
         $user->save();
 
-        event(new Registered($user));
+        // Email verifikasi dikirim lewat event Registered. Bila SMTP bermasalah, akun tetap dibuat
+        // dan pengguna dapat meminta kirim ulang dari halaman verifikasi (bukan halaman error 500).
+        $mailFailed = false;
+        try {
+            event(new Registered($user));
+        } catch (\Throwable $e) {
+            $mailFailed = true;
+            Log::error('Gagal mengirim email verifikasi saat registrasi: '.$e->getMessage(), ['user_id' => $user->id]);
+        }
 
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect($user->isDosen() ? route('dosen.monitor') : RouteServiceProvider::HOME);
+        $redirect = redirect()->route('verification.notice');
+
+        return $mailFailed
+            ? $redirect->withErrors(['email' => 'Akun dibuat, tetapi email verifikasi belum terkirim. Klik "Kirim ulang email verifikasi" di bawah.'])
+            : $redirect;
     }
 
     /**

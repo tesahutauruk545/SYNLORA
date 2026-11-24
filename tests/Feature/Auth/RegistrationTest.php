@@ -24,12 +24,13 @@ class RegistrationTest extends TestCase
             'role' => 'mahasiswa',
             'nim' => '2203111001',
             'kelas' => 'A',
-            'email' => 'test@example.com',
+            'email' => 'testuser1@gmail.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(RouteServiceProvider::HOME);
+        // Akun baru wajib verifikasi Gmail dulu, jadi diarahkan ke halaman verifikasi.
+        $response->assertRedirect(route('verification.notice'));
     }
 }

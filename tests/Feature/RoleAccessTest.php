@@ -51,21 +51,21 @@ class RoleAccessTest extends TestCase
     public function test_both_roles_register_and_land_on_their_dashboard(): void
     {
         config(['synlora.dosen_registration' => 'open']); // mode terbuka eksplisit; mode bawaan diuji di SynloraV2Test
-        $this->post('/register', ['name' => 'Mhs Baru', 'role' => 'mahasiswa', 'email' => 'm@example.com', 'nim' => '2203111009', 'kelas' => 'A',
-            'password' => 'password123', 'password_confirmation' => 'password123'])->assertRedirect('/dashboard');
-        $this->assertSame('mahasiswa', User::where('email', 'm@example.com')->value('role'));
+        $this->post('/register', ['name' => 'Mhs Baru', 'role' => 'mahasiswa', 'email' => 'mhsbaru@gmail.com', 'nim' => '2203111009', 'kelas' => 'A',
+            'password' => 'password123', 'password_confirmation' => 'password123'])->assertRedirect(route('verification.notice'));
+        $this->assertSame('mahasiswa', User::where('email', 'mhsbaru@gmail.com')->value('role'));
         auth()->logout();
 
-        $this->post('/register', ['name' => 'Dosen Baru', 'role' => 'dosen', 'email' => 'd@example.com',
-            'password' => 'password123', 'password_confirmation' => 'password123'])->assertRedirect(route('dosen.monitor'));
-        $this->assertSame('dosen', User::where('email', 'd@example.com')->value('role'));
+        $this->post('/register', ['name' => 'Dosen Baru', 'role' => 'dosen', 'email' => 'dosenbaru@gmail.com',
+            'password' => 'password123', 'password_confirmation' => 'password123'])->assertRedirect(route('verification.notice'));
+        $this->assertSame('dosen', User::where('email', 'dosenbaru@gmail.com')->value('role'));
     }
 
     public function test_register_rejects_unknown_role(): void
     {
-        $this->post('/register', ['name' => 'X', 'role' => 'admin', 'email' => 'x@example.com', 'password' => 'password123', 'password_confirmation' => 'password123'])
+        $this->post('/register', ['name' => 'X', 'role' => 'admin', 'email' => 'xuser99@gmail.com', 'password' => 'password123', 'password_confirmation' => 'password123'])
             ->assertSessionHasErrors('role');
-        $this->assertDatabaseMissing('users', ['email' => 'x@example.com']);
+        $this->assertDatabaseMissing('users', ['email' => 'xuser99@gmail.com']);
     }
 
     // ------------------------------------------------ room: kedua peran setara

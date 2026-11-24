@@ -6,6 +6,7 @@ use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 
@@ -28,11 +29,22 @@ class ProfileController extends Controller
     {
         $request->user()->fill($request->validated());
 
-        if ($request->user()->isDirty('email')) {
+        $emailChanged = $request->user()->isDirty('email');
+
+        if ($emailChanged) {
             $request->user()->email_verified_at = null;
         }
 
         $request->user()->save();
+
+        // Email baru harus diverifikasi ulang; tautan dikirim ke alamat baru.
+        if ($emailChanged) {
+            try {
+                $request->user()->sendEmailVerificationNotification();
+            } catch (\Throwable $e) {
+                Log::error('Gagal mengirim email verifikasi setelah ganti email: '.$e->getMessage(), ['user_id' => $request->user()->id]);
+            }
+        }
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }

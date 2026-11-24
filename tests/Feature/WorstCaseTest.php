@@ -81,10 +81,10 @@ class WorstCaseTest extends TestCase
 
     public function test_S03_S55_role_cannot_be_forced_by_extra_fields(): void
     {
-        $this->post('/register', ['name' => 'X', 'role' => 'admin', 'email' => 'x@example.com', 'nim' => '2203999999', 'kelas' => 'A', 'password' => 'password123', 'password_confirmation' => 'password123'])
+        $this->post('/register', ['name' => 'X', 'role' => 'admin', 'email' => 'xuser99@gmail.com', 'nim' => '2203999999', 'kelas' => 'A', 'password' => 'password123', 'password_confirmation' => 'password123'])
             ->assertSessionHasErrors('role');
-        $this->post('/register', ['name' => 'X', 'role' => 'mahasiswa', 'is_admin' => 1, 'email' => 'x@example.com', 'nim' => '2203999999', 'kelas' => 'A', 'password' => 'password123', 'password_confirmation' => 'password123']);
-        $this->assertSame('mahasiswa', User::where('email', 'x@example.com')->value('role'));
+        $this->post('/register', ['name' => 'X', 'role' => 'mahasiswa', 'is_admin' => 1, 'email' => 'xuser99@gmail.com', 'nim' => '2203999999', 'kelas' => 'A', 'password' => 'password123', 'password_confirmation' => 'password123']);
+        $this->assertSame('mahasiswa', User::where('email', 'xuser99@gmail.com')->value('role'));
     }
 
     public function test_S04_guest_and_wrong_role_blocked_everywhere(): void
