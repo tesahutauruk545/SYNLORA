@@ -18,6 +18,8 @@
         "vite": "^5.0.0"
     },
     "dependencies": {
-        "@mediapipe/tasks-vision": "^1.2.3"
+        "@mediapipe/tasks-vision": "^1.2.3",
+        "laravel-echo": "^1.16.1",
+        "pusher-js": "^8.4.0"
     }
 }

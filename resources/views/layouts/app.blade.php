@@ -14,6 +14,21 @@
     <body class="theme-night font-sans antialiased">
         <div class="night-ambient" aria-hidden="true"><i></i><i></i></div>
 
+        @auth
+            @php
+                $notifCfg = [
+                    'indexUrl' => route('notifications.index'),
+                    'readUrl' => url('/notifications/__ID__/read'),
+                    'readAllUrl' => route('notifications.readAll'),
+                    'csrf' => csrf_token(),
+                    'userId' => auth()->id(),
+                    'pollSeconds' => 10,
+                    'realtime' => \App\Support\Realtime::config(),
+                ];
+            @endphp
+            <script type="application/json" id="notif-config">@json($notifCfg)</script>
+        @endauth
+
         <div class="min-h-screen">
             @include('layouts.navigation')
 

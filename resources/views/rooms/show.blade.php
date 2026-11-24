@@ -110,6 +110,8 @@
                 </div>
             </div>
 
+            @include('partials.room-monitor', ['room' => $room])
+
             @include('partials.session-panel', [
                 'mode' => 'room',
                 'room' => $room,

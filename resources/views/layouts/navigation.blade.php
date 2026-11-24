@@ -24,7 +24,8 @@
                 </div>
             </div>
 
-            <div class="hidden lg:flex lg:items-center lg:ms-6">
+            <div class="hidden lg:flex lg:items-center lg:ms-6 lg:gap-3">
+                <x-notification-bell />
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="app-user" aria-haspopup="true">
@@ -52,7 +53,8 @@
                 </x-dropdown>
             </div>
 
-            <div class="-me-2 flex items-center lg:hidden">
+            <div class="-me-2 flex items-center gap-2 lg:hidden">
+                <x-notification-bell />
                 <button @click="open = ! open" class="grid h-11 w-11 place-items-center rounded-full border border-[var(--line)] bg-white/10 transition hover:bg-white/20 focus:outline-none" :aria-expanded="open" aria-label="Menu navigasi">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />

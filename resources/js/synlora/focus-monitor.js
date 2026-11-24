@@ -1,3 +1,4 @@
+import { cameraHub } from './camera-hub.js';
 import { computeFocus, THRESHOLDS, eventForTransition, SIGNALS, meanLuminance, estimateHeadPose, Hysteresis } from './focus-state.js';
 
 /** ID acak untuk mendeteksi dua tab / dua browser pada satu sesi (bukan identitas pribadi). */
@@ -206,6 +207,7 @@ export class FocusMonitor {
     /** Dipanggil tombol "Aktifkan Kamera". */
     async enableCamera() {
         this.wantCamera = true;
+        window.dispatchEvent(new CustomEvent('synlora:camera-request', { detail: { on: true } }));
         return this.#startCamera(false);
     }
 
@@ -220,10 +222,9 @@ export class FocusMonitor {
         }
 
         try {
-            this.stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 } },
-                audio: false,
-            });
+            // Stream kamera dipakai bersama (CameraHub): tidak ada getUserMedia ganda dan kamera tidak mati
+            // selama pemantauan room masih memakainya (mis. saat Pomodoro dijeda).
+            this.stream = await cameraHub.acquire('focus-monitor');
         } catch (err) {
             this.wantCamera = false;
             this.o.onError(this.#cameraErrorMessage(err));
@@ -281,6 +282,7 @@ export class FocusMonitor {
     /** Matikan kamera oleh pengguna. */
     disableCamera() {
         this.wantCamera = false;
+        window.dispatchEvent(new CustomEvent('synlora:camera-request', { detail: { on: false } }));
         const wasOn = this.cameraOn;
         this.#teardownCamera();
         if (wasOn) this.o.send('CAMERA_OFF', this.current ? this.current.status : null, 'Kamera dimatikan', undefined, 'face');
@@ -317,7 +319,7 @@ export class FocusMonitor {
 
     #stopStream() {
         if (this.stream) {
-            this.stream.getTracks().forEach((t) => t.stop());
+            cameraHub.release('focus-monitor');
             this.stream = null;
         }
         if (this.o.video) this.o.video.srcObject = null;

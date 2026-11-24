@@ -4,6 +4,8 @@ use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DosenMonitorController;
 use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\RoomMonitorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\SessionController;
@@ -53,6 +55,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/rooms/{room}/activities', [RoomController::class, 'activities'])->middleware('throttle:60,1')->name('rooms.getActivities');
         Route::post('/rooms/{room}/sessions', [SessionController::class, 'storeInRoom'])->name('rooms.sessions.store');
 
+        // Pemantauan per room (kamera/wajah/HP/tab), terpisah dari Pomodoro dan tugas
+        Route::post('/rooms/{room}/monitor/events', [RoomMonitorController::class, 'event'])->middleware('throttle:240,1')->name('rooms.monitor.event');
+
         // Materi
         Route::post('/rooms/{room}/materials', [MaterialController::class, 'store'])->name('materials.store');
         Route::get('/rooms/{room}/materials/{material}/download', [MaterialController::class, 'download'])->name('materials.download');
@@ -67,6 +72,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/rooms/{room}/assignments/{assignment}/submissions/{submission}/download', [AssignmentController::class, 'downloadSubmission'])->name('assignments.submissions.download');
     });
 
+    // ------------------------------------------------ Notifikasi
+    Route::get('/notifications', [NotificationController::class, 'index'])->middleware('throttle:120,1')->name('notifications.index');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->whereNumber('notification')->name('notifications.read');
+
     // ------------------------------------------------ Target harian
     Route::patch('/target-harian', [DashboardController::class, 'updateGoal'])->name('goal.update');
 
@@ -75,6 +85,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [DosenMonitorController::class, 'index'])->name('dosen.monitor');
         Route::get('/data', [DosenMonitorController::class, 'data'])->middleware('throttle:40,1')->name('dosen.data');
         Route::get('/mahasiswa/{student}/riwayat', [DosenMonitorController::class, 'history'])->whereNumber('student')->middleware('throttle:60,1')->name('dosen.history');
+        Route::get('/peringatan', [DosenMonitorController::class, 'alerts'])->middleware('throttle:60,1')->name('dosen.alerts');
         Route::get('/ekspor', [DosenMonitorController::class, 'export'])->middleware('throttle:10,1')->name('dosen.export');
     });
 

@@ -23,6 +23,12 @@ const EVENT_LABEL = {
     CAMERA_DENIED: 'Izin kamera ditolak', CAMERA_UNAVAILABLE: 'Kamera tidak tersedia', CAMERA_ERROR: 'Kamera bermasalah', MODEL_LOAD_FAILED: 'Model wajah gagal dimuat',
 };
 
+const MON_LEVEL = { HIJAU: 'text-emerald-700', KUNING: 'text-amber-700', ABU: 'text-slate-500' };
+const CAM = { off: 'kamera mati', on: 'kamera aktif', lost: 'kamera terputus', denied: 'izin kamera ditolak', error: 'kamera bermasalah' };
+const FACE = { unknown: 'menunggu deteksi', facing: 'menghadap monitor', not_facing: 'tidak menghadap', turned_left: 'menoleh kiri', turned_right: 'menoleh kanan', not_found: 'wajah tidak terdeteksi' };
+const TASK = { idle: 'tidak ada', opened: 'membuka tugas', submitted: 'sudah mengumpulkan' };
+const ORI = { vertical: 'vertikal', horizontal: 'horizontal' };
+
 const el = (tag, cls, text) => {
     const n = document.createElement(tag);
     if (cls) n.className = cls;
@@ -74,7 +80,20 @@ export function init(cfg) {
         const sub = el('div', 'mt-0.5 truncate text-xs text-synlora-900/55', `${PRESENCE[s.presence] || ''}${s.presence === 'belajar' && why ? ` · ${why}` : ''}${s.presence === 'belajar' ? ` · ${s.camera === 'CAMERA_ON' ? 'kamera' : 'tanpa kamera'}` : ''}`);
         sub.title = `${s.reason || ''} | ${s.camera_label || ''}`;
         wrap.append(sub);
+        wrap.append(...monLines(s));
         return wrap;
+    }
+
+    /** Baris pemantauan kamera/tab (terpisah dari status Pomodoro). Hanya tampil bila pemantauan room aktif. */
+    function monLines(s) {
+        const m = s.mon;
+        if (!m || !m.active) return [];
+        const lv = MON_LEVEL[m.level] || 'text-synlora-900/70';
+        const a = el('div', `mt-1 text-xs font-medium ${lv}`, `${m.reason}${m.tab === 'away' ? ' · meninggalkan tab' : ''}`);
+        const phone = m.phone === 'detected' ? `HP: terdeteksi${m.phone_orientation ? ` (${ORI[m.phone_orientation]}` : ''}${m.phone_confidence ? `${m.phone_orientation ? ', ' : ' ('}${Math.round(m.phone_confidence * 100)}%` : ''}${m.phone_orientation || m.phone_confidence ? ')' : ''}` : 'HP: tidak terdeteksi';
+        const b = el('div', 'text-[11px] leading-snug text-synlora-900/55',
+            `${CAM[m.camera] || m.camera} · wajah: ${FACE[m.face] || m.face} · ${phone} · tab: ${m.tab === 'away' ? 'ditinggalkan' : 'aktif'} (${m.tab_away_count}x, ${Math.round(m.tab_away_seconds)} dtk) · tugas: ${TASK[m.task] || m.task}${m.last_event_human ? ` · ${m.last_event_human}` : ''}`);
+        return [a, b];
     }
 
     function pomodoroCell(s) {
@@ -130,6 +149,13 @@ export function init(cfg) {
         document.querySelector('[data-count="all"]').textContent = sum.total;
         ['HIJAU', 'KUNING', 'MERAH', 'ABU', 'DISCONNECTED', 'UNKNOWN'].forEach((k) => { document.querySelector(`[data-count="${k}"]`).textContent = sum[k] ?? 0; });
         document.querySelector('[data-count="CAMERA_OFF"]').textContent = sum.camera_off ?? 0;
+        set('m-total', sum.total);
+        set('m-active', sum.mon_active ?? 0);
+        set('m-focus', sum.mon_focus ?? 0);
+        set('m-attention', sum.mon_attention ?? 0);
+        set('m-undetected', sum.mon_undetected ?? 0);
+        set('m-tab', sum.mon_tab_away ?? 0);
+        set('m-phone', sum.mon_phone ?? 0);
 
         // Isi pilihan kelas tanpa menghapus pilihan aktif.
         const ks = $('f-kelas');
@@ -173,6 +199,7 @@ export function init(cfg) {
             state.data = await res.json();
             failures = 0;
             render();
+            loadAlerts();
             const t = new Date(state.data.generated_at * 1000);
             liveIndicator(true, `Terbarui ${t.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`);
         } catch (err) {
@@ -182,6 +209,34 @@ export function init(cfg) {
             inflight = false;
             schedule();
         }
+    }
+
+    // Riwayat peringatan monitoring (kamera/wajah/HP/tab): 50 terbaru di room yang diikuti dosen.
+    async function loadAlerts() {
+        const box = $('alert-list');
+        if (!box || !cfg.alertsUrl) return;
+        try {
+            const url = new URL(cfg.alertsUrl, window.location.origin);
+            if (state.room) url.searchParams.set('room', state.room);
+            const res = await fetch(url, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+            if (!res.ok) return;
+            const { alerts } = await res.json();
+            if (!alerts.length) { box.replaceChildren(el('li', 'px-4 py-6 text-center text-sm text-synlora-900/55', 'Belum ada peringatan monitoring.')); return; }
+            box.replaceChildren(...alerts.map((a) => {
+                const li = el('li', 'grid gap-x-4 gap-y-1 px-4 py-3 text-sm md:grid-cols-[1.1fr_1.6fr_1fr_.8fr_.8fr]');
+                const ori = a.orientation ? ` · ${ORI[a.orientation]}` : '';
+                const conf = a.confidence ? ` · ${Math.round(a.confidence * 100)}%` : '';
+                li.append(
+                    el('div', 'font-semibold', a.student || '—'),
+                    el('div', '', `${a.label}${ori}${conf}`),
+                    el('div', 'text-xs text-synlora-900/55', `${a.room || ''} · ${a.at}`),
+                    el('div', 'text-xs text-synlora-900/70', a.duration_seconds !== null ? `${a.duration_seconds} dtk` : '—'),
+                    el('div', `text-xs font-medium ${a.state === 'berlangsung' ? 'text-amber-700' : 'text-emerald-700'}`, a.state),
+                );
+                li.title = a.status || '';
+                return li;
+            }));
+        } catch (_) { /* dicoba lagi pada pembaruan berikutnya */ }
     }
 
     function schedule() {

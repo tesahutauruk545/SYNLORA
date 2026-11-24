@@ -57,4 +57,23 @@ return [
         'poll_seconds' => (int) env('MONITOR_POLL_SECONDS', 5),
         'cache_seconds' => (int) env('MONITOR_CACHE_SECONDS', 3),
     ],
+
+    // Pemantauan kamera/tab per room (terpisah dari Pomodoro). Semua ambang dapat diubah lewat .env.
+    'room_monitor' => [
+        // Tidak ada detak lebih dari ini -> pemantauan dianggap tidak aktif di dashboard.
+        'stale_seconds' => (int) env('RM_STALE_SECONDS', 45),
+        // Kamera dianggap TERPUTUS bila sebelumnya aktif lalu tidak ada detak sama sekali sebanyak ini.
+        'camera_lost_seconds' => (int) env('RM_CAMERA_LOST_SECONDS', 90),
+        // Jeda minimum antar-notifikasi untuk jenis peringatan yang sama pada mahasiswa yang sama.
+        'alert_cooldown_seconds' => (int) env('RM_ALERT_COOLDOWN', 60),
+        // Confidence minimum agar HP dianggap terdeteksi (0-1). Dikirim juga ke klien sebagai ambang awal.
+        'phone_min_confidence' => (float) env('RM_PHONE_MIN_CONFIDENCE', 0.45),
+        // Ambang waktu klien (milidetik).
+        'face_not_found_ms' => (int) env('RM_FACE_NOT_FOUND_MS', 5000),
+        'face_away_ms' => (int) env('RM_FACE_AWAY_MS', 6000),
+        'face_turn_ms' => (int) env('RM_FACE_TURN_MS', 5000),
+        'phone_frames_needed' => (int) env('RM_PHONE_FRAMES', 3),
+        'object_model_file' => 'efficientdet_lite0.tflite',
+        'object_model_remote_url' => 'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite',
+    ],
 ];

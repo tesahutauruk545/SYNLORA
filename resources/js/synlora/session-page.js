@@ -176,6 +176,12 @@ export function init(cfg) {
         onError: showError,
     });
 
+    // Kamera room yang dinyalakan di halaman lain (mis. tugas) dilanjutkan di sini agar tombol & status konsisten.
+    try {
+        const m = JSON.parse(sessionStorage.getItem('synlora-monitor') || '{}');
+        if (cfg.mode === 'room' && m.want && btnOn) monitor.enableCamera();
+    } catch (_) { /* penyimpanan diblokir */ }
+
     paintStatus('ABU', 'Pemantauan belum aktif. Mulai sesi fokus untuk mengaktifkannya.');
     pomodoro.boot();
 

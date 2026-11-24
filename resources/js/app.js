@@ -38,3 +38,15 @@ const monitorConfig = document.getElementById('monitor-config');
 if (monitorConfig) {
     import('./synlora/lecturer-monitor.js').then((m) => m.init(JSON.parse(monitorConfig.textContent)));
 }
+
+// Pemantauan per room (kamera/wajah/HP/tab) berjalan terpisah dari Pomodoro; dimuat hanya di halaman room & tugas.
+const roomMonitorConfig = document.getElementById('room-monitor-config');
+if (roomMonitorConfig) {
+    import('./synlora/monitor-hub.js').then((m) => m.init(JSON.parse(roomMonitorConfig.textContent)));
+}
+
+// Lonceng notifikasi (semua halaman berlogin).
+const notifConfig = document.getElementById('notif-config');
+if (notifConfig) {
+    import('./synlora/notifications.js').then((m) => m.init(JSON.parse(notifConfig.textContent)));
+}

@@ -116,6 +116,10 @@ class LecturerMonitor
             ->groupBy('user_id')
             ->pluck('last_seen', 'user_id');
 
+        // 5) Pemantauan per room (kamera/wajah/HP/tab/tugas): terpisah dari Pomodoro.
+        RoomMonitor::sweepStale($roomIds);
+        $monStates = \App\Models\RoomMonitorState::whereIn('room_id', $roomIds)->whereIn('user_id', $userIds)->orderBy('last_seen_at')->get()->keyBy('user_id');
+
         $students = [];
         foreach ($members->groupBy('id') as $uid => $rows) {
             $m = $rows->first();
@@ -160,6 +164,7 @@ class LecturerMonitor
                 'today_sessions' => (int) ($t->sessions ?? 0),
                 'goal_minutes' => (int) ($m->daily_goal_minutes ?: 120),
                 'present_today' => $s !== null || (int) ($t->sessions ?? 0) > 0,
+                'mon' => RoomMonitor::describe($monStates->get($uid), $now),
                 'last_seen_ts' => $seenTs,
                 'last_seen' => $seenTs ? Carbon::createFromTimestamp($seenTs)->diffForHumans() : null,
             ];
@@ -169,6 +174,10 @@ class LecturerMonitor
 
         $count = fn (string $st) => count(array_filter($students, fn ($x) => $x['status'] === $st));
         $studying = count(array_filter($students, fn ($x) => $x['presence'] === 'belajar'));
+
+        $monOf = fn (array $x) => $x['mon'] ?? null;
+        $monActive = array_filter($students, fn ($x) => ($monOf($x)['active'] ?? false));
+        $cnt = fn (callable $f) => count(array_filter($monActive, $f));
 
         return [
             'rooms' => $rooms->map(fn ($r) => ['code' => $r->code, 'name' => $r->name])->values()->all(),
@@ -186,6 +195,13 @@ class LecturerMonitor
                 'present_today' => count(array_filter($students, fn ($x) => $x['present_today'])),
                 'absent_today' => count(array_filter($students, fn ($x) => ! $x['present_today'])),
                 'goal_met_today' => count(array_filter($students, fn ($x) => $x['today_seconds'] >= $x['goal_minutes'] * 60)),
+                // Ringkasan pemantauan kamera/tab (hanya mahasiswa yang pemantauannya aktif).
+                'mon_active' => count($monActive),
+                'mon_focus' => $cnt(fn ($x) => $x['mon']['level'] === 'HIJAU' && $x['mon']['tab'] === 'visible'),
+                'mon_attention' => $cnt(fn ($x) => $x['mon']['level'] === 'KUNING'),
+                'mon_undetected' => $cnt(fn ($x) => $x['mon']['level'] === 'ABU'),
+                'mon_tab_away' => $cnt(fn ($x) => $x['mon']['tab'] === 'away'),
+                'mon_phone' => $cnt(fn ($x) => $x['mon']['phone'] === 'detected'),
                 'avg_today_minutes' => $students ? (int) round(array_sum(array_column($students, 'today_seconds')) / count($students) / 60) : 0,
             ],
             'students' => $students,

@@ -37,6 +37,16 @@
                     <div class="card p-4 sm:p-5"><div class="text-sm text-synlora-900/60">Rata-rata hari ini</div><div class="mt-1 font-display text-3xl font-semibold"><span data-sum="avg">–</span> <span class="text-base font-medium text-synlora-900/50">menit</span></div></div>
                 </div>
 
+                {{-- Pemantauan kamera & tab (real-time, terpisah dari Pomodoro) --}}
+                <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6" id="monitor-summary">
+                    <div class="card p-4"><div class="text-xs text-synlora-900/60">Total anggota</div><div class="mt-1 font-display text-2xl font-semibold" data-sum="m-total">–</div></div>
+                    <div class="card p-4"><div class="text-xs text-synlora-900/60">Aktif dipantau</div><div class="mt-1 font-display text-2xl font-semibold" data-sum="m-active">–</div></div>
+                    <div class="card p-4"><div class="text-xs text-synlora-900/60"><span class="dot dot-HIJAU"></span> Fokus</div><div class="mt-1 font-display text-2xl font-semibold" data-sum="m-focus">–</div></div>
+                    <div class="card p-4"><div class="text-xs text-synlora-900/60"><span class="dot dot-KUNING"></span> Perhatian</div><div class="mt-1 font-display text-2xl font-semibold" data-sum="m-attention">–</div></div>
+                    <div class="card p-4"><div class="text-xs text-synlora-900/60"><span class="dot dot-ABU"></span> Tidak terdeteksi</div><div class="mt-1 font-display text-2xl font-semibold" data-sum="m-undetected">–</div><div class="text-[11px] text-synlora-900/50">termasuk HP: <span data-sum="m-phone">–</span></div></div>
+                    <div class="card p-4"><div class="text-xs text-synlora-900/60">Meninggalkan tab</div><div class="mt-1 font-display text-2xl font-semibold" data-sum="m-tab">–</div></div>
+                </div>
+
                 {{-- Filter --}}
                 <div class="card mt-4 p-4">
                     <div class="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
@@ -87,6 +97,11 @@
                     </div>
                     <ul id="student-list" class="divide-y divide-sand-300/60" aria-live="off"></ul>
                     <p id="empty-state" class="hidden p-8 text-center text-sm text-synlora-900/60"></p>
+                </div>
+
+                <div class="card mt-4 overflow-hidden">
+                    <div class="border-b border-sand-300/70 bg-sand-100/60 px-5 py-3 text-sm font-semibold">Riwayat peringatan monitoring</div>
+                    <ul id="alert-list" class="divide-y divide-sand-300/60" aria-live="off"></ul>
                 </div>
 
                 <p class="mt-4 text-xs leading-relaxed text-synlora-900/55">

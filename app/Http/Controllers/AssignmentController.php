@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Assignment;
 use App\Models\Room;
 use App\Models\Submission;
+use App\Services\NotificationCenter;
+use App\Services\RoomMonitor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -25,13 +27,20 @@ class AssignmentController extends Controller
             'due_at.after' => 'Batas waktu harus setelah waktu sekarang.',
         ]);
 
-        $room->assignments()->create([
+        $assignment = $room->assignments()->create([
             'user_id' => $request->user()->id,
             'title' => trim($data['title']),
             'description' => $data['description'] ?? null,
             'due_at' => $data['due_at'] ?? null,
             'allow_late' => $request->boolean('allow_late', true),
         ]);
+
+        // Notifikasi tugas baru ke mahasiswa room ini. Kegagalan notifikasi tidak boleh membatalkan pembuatan tugas.
+        try {
+            NotificationCenter::assignmentPublished($assignment, $room, $request->user());
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return back()->with('status', 'Tugas dibuat.');
     }
@@ -45,6 +54,11 @@ class AssignmentController extends Controller
         $isOwner = $room->isOwnedBy($user);
 
         $mine = $assignment->submissions()->where('user_id', $user->id)->first();
+
+        // Aktivitas tugas dicatat server di keadaan pemantauan (tidak menyentuh kamera maupun Pomodoro).
+        if (! $isOwner || $user->isMahasiswa()) {
+            RoomMonitor::setTask($user, $room, $assignment->id, $mine ? 'submitted' : 'opened');
+        }
 
         $submissions = $isOwner
             ? $assignment->submissions()->with('user:id,name')->orderBy('submitted_at')->get()
@@ -145,6 +159,8 @@ class AssignmentController extends Controller
         if (! empty($result['old'])) {
             Storage::disk('local')->delete($result['old']);
         }
+
+        RoomMonitor::setTask($request->user(), $room, $assignment->id, 'submitted');
 
         return back()->with('status', $result['late'] ? 'Tugas terkumpul (terlambat).' : 'Tugas berhasil dikumpulkan.');
     }
